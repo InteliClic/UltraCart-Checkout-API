@@ -136,7 +136,6 @@ class UltraCart_Checkout {
                     break;
             }
             
-            $this->response = $response;
             $this->detectErrors();
 
         } else {
@@ -186,15 +185,14 @@ class UltraCart_Checkout {
      * @throws Exception
      */
     private function setCart(){
-        global $lang;
+        global $config, $lang;
         $cart = json_decode($this->response->body);
         $this->hasCart = !is_null($cart);
         if ($this->hasCart) {
             $cart = (array) $cart;
             ksort($cart);
             $this->cart = (object) $cart;
-            $cookie = array('expiry' => '', 'path' => '', 'domain' => '');
-            setcookie('cartId', $this->cart->cartId, $cookie['cookie_expiry'], $cookie['cookie_path'], $cookie['cookie_domain']);
+            setcookie('cartId', $this->cart->cartId, $config['cookie_expiry'], $config['cookie_path'], $config['cookie_domain']);
             $_SESSION['cartId'] = $this->cart->cartId;
             $this->updateItemState();
             $this->updateLoginState();
@@ -224,7 +222,7 @@ class UltraCart_Checkout {
      * @param array $item
      */
     public function addCartItem($item) {
-        $this->cart->items = array($item);
+        $this->cart->items[] = (object) $item;
         $this->updateCart();
     }
 
@@ -234,11 +232,12 @@ class UltraCart_Checkout {
      * @throws Exception
      */
     public function addCartItems($items) {
+        global $lang;
         if(count($items) > 0){
-            $this->cart->items = $items;
+            $this->cart->items = (object) array_merge((array) $this->cart->items, (array) $items);
             $this->updateCart();
         }  else {
-            throw new Exception($lang['ultracart']['cart']['missingParameter'], 202);
+            throw new Exception($lang['ultracart']['cart']['missingParameter'], 2002);
         }
     }
     
@@ -249,14 +248,15 @@ class UltraCart_Checkout {
      * @throws Exception
      */
     public function getCartItem($itemId){
-        if ($this->hasItem AND !empty($itemId)) {
+        global $lang;
+        if ($this->hasItems AND !empty($itemId)) {
             foreach ($this->cart->items as $row => $cartItem) {
                 if ($cartItem->itemId == $itemId) {
                     return $cartItem;
                 }
             }
         } else {
-            throw new Exception($lang['ultracart']['cart']['empty'], 2000);
+            return false;
         }
     }
     
@@ -266,10 +266,11 @@ class UltraCart_Checkout {
      * @throws Exception
      */
     public function getCartItems(){
+        global $lang;
         if ($this->hasItems) {
             return $this->cart->items;
         } else {
-            throw new Exception($lang['ultracart']['cart']['empty'], 2000);
+            return false;
         }
     }
     
@@ -279,6 +280,7 @@ class UltraCart_Checkout {
      * @throws Exception
      */
     public function updateCartItem($item) {
+        global $lang;
         if ($this->hasItems AND is_array($item)) {
             foreach($this->cart->items as $key => $cartItem){
                 if ($cartItem->itemId == $item['itemId']) {
@@ -298,6 +300,7 @@ class UltraCart_Checkout {
      * @throws Exception
      */
     public function updateCartItems($items) {
+        global $lang;
         if ($this->hasItems AND count((array) $items) > 0) {
             foreach ($items as $row => $item) {
                 foreach($this->cart->items as $key => $cartItem){
@@ -342,7 +345,7 @@ class UltraCart_Checkout {
      */
     public function clearItems() {
         if ($this->hasItems) {
-            unset($this->cart->items);
+            $this->cart->items = array();
             $this->hasItems = false;
             $this->updateCart();
         }
@@ -425,7 +428,7 @@ class UltraCart_Checkout {
      * @return type
      * @throws Exception
      */
-    public function finalizeCart() {
+    public function finalizeOrder() {
         global $lang;
         if ($this->hasItems) {
             $this->setShipping();
