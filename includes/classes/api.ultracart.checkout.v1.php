@@ -30,7 +30,7 @@ class UltraCart_Checkout {
         $this->credentials = array('merchantId' => $config['ultracart']['merchantId'], 'login' => $config['ultracart']['login'], 'password' => $config['ultracart']['pass']);
         $this->initialize();
     }
-    
+
     private function initialize() {
         global $config;
         // Set cart fields
@@ -49,7 +49,7 @@ class UltraCart_Checkout {
         // Lets pull the most recent cart
         $this->getCart();
     }
-    
+
     private function updateItemState() {
         $this->hasItems = $this->hasCart && property_exists($this->cart, 'items') && count($this->cart->items) > 0;
         if ($this->hasItems) {
@@ -110,10 +110,10 @@ class UltraCart_Checkout {
             }
         }
     }
-    
+
     private function doCall(){
         global $lang;
-        
+
         if(!is_null($this->request->method)){
             $url = $this->request->server . $this->request->method;
             switch ($this->request->type) {
@@ -135,22 +135,37 @@ class UltraCart_Checkout {
                     throw new Exception($lang['ultracart']['api']['invalidRequest'], 1001);
                     break;
             }
-            
+
             $this->detectErrors();
 
         } else {
             throw new Exception($lang['ultracart']['api']['methodEmpty'], 1002);
         }
     }
-    
-/* 
+
+    private function setReturnURL(){
+        $prevPage = (!empty($_SESSION["cart"]["prev_page"]))?$_SESSION["cart"]["prev_page"]:$_SERVER['REQUEST_URI'];
+        $pageURL = 'http';
+        if (isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] == "on") {
+            $pageURL .= "s";
+        }
+        $pageURL .= "://";
+        if (isset($_SERVER["SERVER_PORT"]) && $_SERVER["SERVER_PORT"] != "80") {
+            $pageURL .= $_SERVER["SERVER_NAME"] . ":" . $_SERVER["SERVER_PORT"] . $prevPage;
+        } else {
+            $pageURL .= $_SERVER["SERVER_NAME"] . $prevPage;
+        }
+        return $pageURL;
+    }
+
+/*
  * CART
  */
-    
+
     /**
      *  Get Cart object from UltraCart
      *  This function gets the most recent cart object from UltraCart and sets it.
-     * 
+     *
      *  Alternative Methods for sending the shopping CartID. However as outlined url parameters are prefered.
      *      $this->curl->headers['X-UC-Shopping-Cart-Id'] = $this->cart->cartId;
      *      $cart_url = '?_mid=' . $this->credentials['merchantId'] . '&_cid' . $this->cart->cartId;
@@ -158,12 +173,12 @@ class UltraCart_Checkout {
     public function getCart(){
         $this->request->type = 'get';
         $this->request->method = '/rest/cart';
-        if (!is_null($this->cart->cartId)) 
+        if (!is_null($this->cart->cartId))
             $this->request->method .= '/' . $this->cart->cartId;
         $this->doCall();
         $this->setCart();
     }
-    
+
     /**
      *  Update Cart object to UltraCart
      *  This function pushes the most recent cart object to UltraCart.
@@ -172,12 +187,12 @@ class UltraCart_Checkout {
         $this->request->vars = $this->cart;
         $this->request->type = 'put';
         $this->request->method = '/rest/cart';
-        if (!is_null($this->cart->cartId)) 
+        if (!is_null($this->cart->cartId))
             $this->request->method .= '/' . $this->cart->cartId;
         $this->doCall();
         $this->setCart();
     }
-    
+
     /**
      * Set Cart object
      * @global array $lang
@@ -212,11 +227,11 @@ class UltraCart_Checkout {
         $this->cart->merchantId = $this->credentials['merchantId'];
         $this->updateCart();
     }
-    
-/* 
- * CART ITEMS 
+
+/*
+ * CART ITEMS
  */
-    
+
     /**
      * Add Cart Item
      * @param array $item
@@ -240,9 +255,9 @@ class UltraCart_Checkout {
             throw new Exception($lang['ultracart']['cart']['missingParameter'], 2002);
         }
     }
-    
+
     /**
-     * Get Cart Item 
+     * Get Cart Item
      * @param string $itemId
      * @return array
      * @throws Exception
@@ -259,7 +274,7 @@ class UltraCart_Checkout {
             return false;
         }
     }
-    
+
     /**
      * Get Cart Items
      * @return object
@@ -273,7 +288,7 @@ class UltraCart_Checkout {
             return false;
         }
     }
-    
+
     /**
      * Update Cart Item
      * @param array $item
@@ -315,7 +330,7 @@ class UltraCart_Checkout {
             throw new Exception($lang['ultracart']['cart']['empty'], 2000);
         }
     }
-    
+
     /**
      * Remove Cart Item
      * @global array $lang
@@ -338,7 +353,7 @@ class UltraCart_Checkout {
             throw new Exception($lang['ultracart']['cart']['empty'], 2000);
         }
     }
-    
+
     /**
      * Clear Cart Items
      * This removes all items from the cart
@@ -350,11 +365,11 @@ class UltraCart_Checkout {
             $this->updateCart();
         }
     }
-    
-/* 
+
+/*
  * SHIPPING
  */
- 
+
     /**
      * Estimate Shipping
      * @global array $lang
@@ -373,9 +388,9 @@ class UltraCart_Checkout {
             throw new Exception($lang['ultracart']['cart']['empty'], 2000);
         }
     }
-    
+
     /**
-     * Set Shipping 
+     * Set Shipping
      * Sets Method and cost in Cart for Shipping.
      */
     public function setShipping() {
@@ -391,8 +406,8 @@ class UltraCart_Checkout {
             }
         }
     }
-   
-/* 
+
+/*
  * CHECKOUT
  */
 
@@ -409,7 +424,7 @@ class UltraCart_Checkout {
             $request = new stdClass();
             $request->cart = $this->cart;
             $request->errorParameterName = 'error';
-            $request->errorReturnUrl = $_SERVER['REQUEST_URI'];
+            $request->errorReturnUrl = $this->setReturnURL();
             $request->secureHostName = null;
             $this->request->vars = $request;
             $this->request->type = 'post';
@@ -423,7 +438,7 @@ class UltraCart_Checkout {
 
     /**
      * Finalize Cart
-     * This checkout method will complete and return the orderId 
+     * This checkout method will complete and return the orderId
      * @global array $lang
      * @return type
      * @throws Exception
@@ -614,11 +629,11 @@ class UltraCart_Checkout {
             throw new Exception($lang['ultracart']['cartNotReady'], 2000);
         }
     }
-    
+
 /*
  * MARKETING
  */
-    
+
     /**
      * Subscribe Email to Auto Responder
      * The name of the auto responder should be one of the following:
@@ -646,7 +661,7 @@ class UltraCart_Checkout {
             throw new Exception($lang['ultracart']['cart']['empty'], 2000);
         }
     }
-    
+
     /**
      * Apply Coupon
      * @param string $coupon
@@ -660,7 +675,7 @@ class UltraCart_Checkout {
             throw new Exception($lang['ultracart']['cart']['missingParameter'], 2000);
         }
     }
-    
+
     /**
      * Remove Coupon
      * @param string $coupon
@@ -673,12 +688,12 @@ class UltraCart_Checkout {
                     break;
                 }
             }
-            
+
             $this->cart->coupons = array_values((array) $this->cart->coupons);
             $this->updateCart();
         }
     }
-    
+
     /**
      * Apply Coupons
      * @param array $coupons
@@ -691,7 +706,7 @@ class UltraCart_Checkout {
             throw new Exception($lang['ultracart']['cart']['missingParameter'], 2000);
         }
     }
-    
+
     /**
      * Remove Coupons
      */
@@ -701,7 +716,7 @@ class UltraCart_Checkout {
             $this->updateCart();
         }
     }
-    
+
     /**
      * Get Cart Coupons
      * @return array
@@ -709,7 +724,7 @@ class UltraCart_Checkout {
     public function getCartCoupons(){
         return $this->cart->coupons;
     }
-    
+
     /**
      * Gift Settings
      * @global array $lang
@@ -726,9 +741,9 @@ class UltraCart_Checkout {
             return json_decode($this->response->body);
         } else {
             throw new Exception($lang['ultracart']['cart']['notReady'], 2000);
-        } 
+        }
     }
-    
+
     /**
      * Apply Gift Certificate
      * @global array $lang
@@ -756,7 +771,7 @@ class UltraCart_Checkout {
         unset($this->cart->giftCertificate);
         $this->updateCart();
     }
-    
+
     /**
      * Validate Gift Certificate
      * @global array $lang
@@ -781,13 +796,13 @@ class UltraCart_Checkout {
             return ;
         } else {
             throw new Exception($lang['ultracart']['cart']['notReady'], 2000);
-        } 
+        }
     }
-    
+
 /*
  * CONTENT
  */
-    
+
     /**
      * Checkout Terms
      * @global array $lang
@@ -847,7 +862,7 @@ class UltraCart_Checkout {
 
     /**
      * City State
-     * Compares to the zip to the city and state. If they don't match, it returns back the correct 
+     * Compares to the zip to the city and state. If they don't match, it returns back the correct
      * city and state.
      * @global array $lang
      * @return object
@@ -863,9 +878,9 @@ class UltraCart_Checkout {
             return json_decode($this->response->body);
         } else {
             throw new Exception($lang['ultracart']['cart']['notReady'], 2000);
-        } 
+        }
     }
-    
+
     /**
      * Host Link
      * This call is useful for sites with multiple urls. This call links them all together on the back end.
@@ -885,9 +900,9 @@ class UltraCart_Checkout {
             return json_decode($this->response->body);
         } else {
             throw new Exception($lang['ultracart']['cart']['notReady'], 2000);
-        } 
+        }
     }
-    
+
 }
 
 ?>
