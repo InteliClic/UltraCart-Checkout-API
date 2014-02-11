@@ -39,6 +39,7 @@ class UltraCart_Checkout {
         $this->detectCartId();
         // Lets open our curl class to send the request eficiently
         $this->curl = new Curl;
+        $this->curl->user_agent = 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:26.0) Gecko/20100101 Firefox/26.0'; // This needs to be a valid user_agent
         $this->curl->options = array('CURLOPT_TIMEOUT' => $config['api_timeout']);
         $this->curl->headers = array('X-UC-Merchant-Id' => $this->credentials['merchantId'], 'cache-control' => 'no-cache');
         // Create the request
