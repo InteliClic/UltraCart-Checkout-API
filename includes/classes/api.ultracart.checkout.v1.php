@@ -239,7 +239,7 @@ class UltraCart_Checkout {
      */
     public function addCartItem($item) {
         $this->cart->items[] = (object) $item;
-        $this->updateCart();
+        // $this->updateCart();
     }
 
     /**
@@ -363,7 +363,7 @@ class UltraCart_Checkout {
         if ($this->hasItems) {
             $this->cart->items = array();
             $this->hasItems = false;
-            $this->updateCart();
+            // $this->updateCart();
         }
     }
 
@@ -905,5 +905,3 @@ class UltraCart_Checkout {
     }
 
 }
-
-?>
